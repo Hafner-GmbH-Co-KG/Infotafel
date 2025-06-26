@@ -10,6 +10,16 @@ tafel:
 
 ## Django-Projekt starten
 
+Am einfachsten lässt sich das Projekt mit dem beiliegenden Skript
+`start_infotafel.sh` starten. Es installiert die nötigen Pakete, richtet eine
+virtuelle Umgebung ein und startet anschließend den Entwicklungsserver.
+
+```bash
+./start_infotafel.sh
+```
+
+Alternativ können die Schritte manuell ausgeführt werden:
+
 1. Abhängigkeiten installieren (z. B. in einer virtuellen Umgebung):
    ```bash
    pip install django
