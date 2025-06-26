@@ -1,8 +1,14 @@
 # Infotafel
 
-Dieses Repository enthält ein minimales Django-Projekt für eine Infotafel-Anwendung. Um die Anwendung lokal auszuführen benötigen Sie Python und Django.
+Dieses Repository enthält zwei einfache Projektansätze für eine Informations-
+tafel:
 
-## Setup
+1. **Django-Projekt** unter `infotafel_project` – ein minimales Django-Setup
+   zum Experimentieren mit Python.
+2. **HTML/PHP-Skelett** unter `infotafel/htdocs` – ein leichtgewichtiges
+   Grundgerüst, das sich später einfach erweitern lässt.
+
+## Django-Projekt starten
 
 1. Abhängigkeiten installieren (z. B. in einer virtuellen Umgebung):
    ```bash
@@ -14,6 +20,23 @@ Dieses Repository enthält ein minimales Django-Projekt für eine Infotafel-Anwe
    python manage.py migrate
    python manage.py runserver
    ```
-3. Die Infotafel ist anschließend unter `http://127.0.0.1:8000/` erreichbar.
+   Die Infotafel ist anschließend unter `http://127.0.0.1:8000/` erreichbar.
 
-Dieses Grundgerüss kann erweitert und an eigene Anforderungen angepasst werden.
+## Struktur des HTML/PHP-Skeletts
+
+```
+infotafel/
+└── htdocs/
+    ├── index.html         ← Anzeige der Infotafel
+    ├── input.html         ← Eingabemaske
+    ├── scripts/
+    │   ├── archive.php    ← später zum Archivieren
+    │   └── speicher.php   ← später zum Speichern von Eingaben
+    └── data/
+        ├── anzeige.json       ← aktueller Text und Stati
+        ├── einstellungen.json ← Anzeigedauer
+        └── archiv.json        ← Historie
+```
+
+Die Dateien enthalten vorerst nur Beispielinhalte und dienen als Grundlage
+für spätere Erweiterungen.
