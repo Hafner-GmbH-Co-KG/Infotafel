@@ -11,12 +11,17 @@ tafel:
 ## Django-Projekt starten
 
 Am einfachsten lässt sich das Projekt mit dem beiliegenden Skript
-`start_infotafel.sh` starten. Es installiert die nötigen Pakete, richtet eine
-virtuelle Umgebung ein und startet anschließend den Entwicklungsserver.
+`start_infotafel.sh` starten. Es installiert die nötigen Pakete, lädt auf
+Wunsch die aktuelle Version des Repositories herunter oder aktualisiert eine
+bereits vorhandene Kopie, richtet eine virtuelle Umgebung ein und startet
+anschließend den Entwicklungsserver.
 
 ```bash
 ./start_infotafel.sh
 ```
+
+Die im Skript verwendete Repository-Adresse kann bei Bedarf in der Variablen
+`REPO_URL` angepasst werden.
 
 Alternativ können die Schritte manuell ausgeführt werden:
 

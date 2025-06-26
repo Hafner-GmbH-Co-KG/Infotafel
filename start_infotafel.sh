@@ -3,12 +3,27 @@
 set -e
 
 # Simple setup script for a freshly installed Ubuntu system.
-# Installs dependencies, sets up a virtual environment and starts
-# the Django development server.
+# Installs dependencies, ensures the project files are up to date,
+# sets up a virtual environment and starts the Django development
+# server.
+
+# URL of the GitHub repository to clone if the project is not yet
+# present locally. Adjust this to your own repository if needed.
+REPO_URL="https://github.com/example/Infotafel.git"
+
+# If the script is not running inside a git working tree, clone the
+# repository to a new directory and continue from there.
+if [ ! -d .git ]; then
+    git clone "$REPO_URL" Infotafel
+    cd Infotafel
+fi
+
+# When already inside a git repository, fetch the latest changes.
+git pull --ff-only
 
 # Ensure required system packages are present
 sudo apt-get update
-sudo apt-get install -y python3 python3-venv python3-pip
+sudo apt-get install -y git python3 python3-venv python3-pip
 
 # Create virtual environment if not already done
 if [ ! -d "venv" ]; then
