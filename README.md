@@ -55,3 +55,25 @@ infotafel/
 
 Die Dateien enthalten vorerst nur Beispielinhalte und dienen als Grundlage
 für spätere Erweiterungen.
+
+## Liederanzeige-App
+
+Im Django-Unterverzeichnis `tafelausgabe` befindet sich eine kleine App, die
+die gewünschte Liederanzeige für Smartphones und Tablets nachbildet. Sie
+umfasst eine Anzeige- und eine Eingabeseite:
+
+* `http://127.0.0.1:8000/` – zeigt den aktuellen Liedtext in großen Lettern
+  auf schwarzem Hintergrund. Die Felder **T**, **S**, **A** und **B** werden je
+  nach Auswahl farbig hervorgehoben. Ist kein Text gespeichert, erscheint die
+  Uhrzeit.
+* `http://127.0.0.1:8000/eingabe/` – touch-freundliche Maske zum Eingeben des
+  Liedtextes, der aktivierten Stimmen sowie einer optionalen Anzeigedauer.
+  Der Zugriff erfordert eine Anmeldung. Die Seite zeigt eine Vorschau der
+  Anzeige und bleibt nach dem Speichern geöffnet.
+
+Die Anzeigeseite selbst enthält keinen direkten Link zur Eingabe. Die
+Eingabeseite muss daher über die URL aufgerufen werden.
+
+Die Daten werden im `localStorage` des Browsers abgelegt und aktualisieren die
+Anzeige sofort. Für eine kurze Demonstration reicht es somit aus, den
+Django-Server zu starten und beide Seiten im gleichen Browser aufzurufen.
