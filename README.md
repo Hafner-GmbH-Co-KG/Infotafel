@@ -77,3 +77,17 @@ Eingabeseite muss daher über die URL aufgerufen werden.
 Die Daten werden im `localStorage` des Browsers abgelegt und aktualisieren die
 Anzeige sofort. Für eine kurze Demonstration reicht es somit aus, den
 Django-Server zu starten und beide Seiten im gleichen Browser aufzurufen.
+
+Um auf die Eingabeseite zugreifen zu können, muss ein Benutzerkonto
+vorhanden sein. Ein solches lässt sich mit
+
+```bash
+cd infotafel_project
+python manage.py createsuperuser
+```
+
+anlegen. Verwenden Sie einen beliebigen Benutzernamen – typisch ist
+`admin` – und wählen Sie ein Passwort. Danach erreichen Sie die
+Anmeldeseite automatisch unter `http://127.0.0.1:8000/accounts/login/`
+(oder beim ersten Besuch von `/eingabe/`). Nach erfolgreichem Login
+bleiben Sie angemeldet und können den Liedtext bearbeiten.
