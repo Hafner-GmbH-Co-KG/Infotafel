@@ -72,7 +72,7 @@
                 expire: Date.now() + (parseInt(document.getElementById('dauer').value, 10) || 0) * 1000
             };
             localStorage.setItem('anzeige', JSON.stringify(data));
-            window.location.href = 'index.html';
+            window.location.href = '{% url 'anzeige' %}';
         });
     </script>
 </body>

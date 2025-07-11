@@ -54,7 +54,7 @@
         <div id="bass" class="voice">B</div>
     </div>
     <div id="text"></div>
-    <button id="edit" onclick="window.location.href='input.html'">Eingabe</button>
+    <button id="edit" onclick="window.location.href='{% url 'eingabe' %}'">Eingabe</button>
     <script>
         const colors = { sopran: 'red', alt: 'yellow', tenor: 'green', bass: 'blue' };
         const elems = {
