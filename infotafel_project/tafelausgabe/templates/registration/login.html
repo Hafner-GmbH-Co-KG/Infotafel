@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Anmeldung</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f0f0f0;
+            color: #000;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        button {
+            padding: 0.5rem;
+            font-size: 1.2rem;
+            background: #ccc;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <form method="post">
+        {% csrf_token %}
+        <label for="id_username">Benutzername</label>
+        <input type="text" name="username" autofocus required id="id_username">
+        <label for="id_password">Passwort</label>
+        <input type="password" name="password" required id="id_password">
+        <button type="submit">Anmelden</button>
+        {% if form.errors %}
+            <p style="color:red">Ungültige Anmeldung</p>
+        {% endif %}
+    </form>
+</body>
+</html>
