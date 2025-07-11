@@ -1,5 +1,9 @@
 from django.shortcuts import render
 
 
-def index(request):
-    return render(request, 'index.html')
+def anzeige(request):
+    return render(request, 'tafelausgabe/anzeige.html')
+
+
+def eingabe(request):
+    return render(request, 'tafelausgabe/eingabe.html')
