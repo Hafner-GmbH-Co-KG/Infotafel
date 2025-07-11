@@ -2,10 +2,97 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Infotafel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Liederanzeige</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #voices {
+            display: flex;
+            width: 100%;
+        }
+        .voice {
+            flex: 1;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            color: #000;
+            font-weight: bold;
+        }
+        #text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            font-size: clamp(20px, 8vw, 30px);
+        }
+        button#edit {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
-    <h1>Infotafel Anzeige</h1>
-    <div id="anzeige">Hier erscheint später der aktuelle Text.</div>
+    <div id="voices">
+        <div id="tenor" class="voice">T</div>
+        <div id="sopran" class="voice">S</div>
+        <div id="alt" class="voice">A</div>
+        <div id="bass" class="voice">B</div>
+    </div>
+    <div id="text"></div>
+    <button id="edit" onclick="window.location.href='input.html'">Eingabe</button>
+    <script>
+        const colors = { sopran: 'red', alt: 'yellow', tenor: 'green', bass: 'blue' };
+        const elems = {
+            sopran: document.getElementById('sopran'),
+            alt: document.getElementById('alt'),
+            tenor: document.getElementById('tenor'),
+            bass: document.getElementById('bass')
+        };
+        const textDiv = document.getElementById('text');
+        function render() {
+            const stored = JSON.parse(localStorage.getItem('anzeige') || '{}');
+            const now = Date.now();
+            if (stored.expire && now > stored.expire) {
+                localStorage.removeItem('anzeige');
+                Object.keys(colors).forEach(k => elems[k].style.background = '#000');
+                Object.keys(colors).forEach(k => elems[k].style.color = '#000');
+                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+                return;
+            }
+            let active = false;
+            Object.keys(colors).forEach(k => {
+                if (stored[k]) {
+                    elems[k].style.background = colors[k];
+                    elems[k].style.color = '#000';
+                    active = true;
+                } else {
+                    elems[k].style.background = '#000';
+                    elems[k].style.color = '#000';
+                }
+            });
+            if (stored.text) {
+                textDiv.textContent = stored.text;
+            } else {
+                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+            }
+        }
+        render();
+        setInterval(render, 1000);
+    </script>
 </body>
 </html>
