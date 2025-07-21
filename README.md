@@ -74,9 +74,10 @@ umfasst eine Anzeige- und eine Eingabeseite:
 Die Anzeigeseite selbst enthält keinen direkten Link zur Eingabe. Die
 Eingabeseite muss daher über die URL aufgerufen werden.
 
-Die Daten werden im `localStorage` des Browsers abgelegt und aktualisieren die
-Anzeige sofort. Für eine kurze Demonstration reicht es somit aus, den
-Django-Server zu starten und beide Seiten im gleichen Browser aufzurufen.
+Die eingegebenen Daten werden in der von Django bereitgestellten SQLite-Datenbank
+gespeichert. Dadurch steht jedem angemeldeten Benutzer unter `/eingabe/` seine
+eigene Historie zur Verfügung. Die Anzeige aktualisiert sich nach dem Speichern
+automatisch.
 
 Um auf die Eingabeseite zugreifen zu können, muss ein Benutzerkonto
 vorhanden sein. Ein solches lässt sich mit
