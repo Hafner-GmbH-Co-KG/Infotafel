@@ -41,50 +41,21 @@
 </head>
 <body>
     <div id="voices">
-        <div id="tenor" class="voice">T</div>
-        <div id="sopran" class="voice">S</div>
-        <div id="alt" class="voice">A</div>
-        <div id="bass" class="voice">B</div>
+        <div id="tenor" class="voice" style="background: {% if entry and entry.tenor %}green{% else %}#000{% endif %}; color: {% if entry and entry.tenor %}#000{% else %}#000{% endif %};">T</div>
+        <div id="sopran" class="voice" style="background: {% if entry and entry.sopran %}red{% else %}#000{% endif %}; color: {% if entry and entry.sopran %}#000{% else %}#000{% endif %};">S</div>
+        <div id="alt" class="voice" style="background: {% if entry and entry.alt %}yellow{% else %}#000{% endif %}; color: {% if entry and entry.alt %}#000{% else %}#000{% endif %};">A</div>
+        <div id="bass" class="voice" style="background: {% if entry and entry.bass %}blue{% else %}#000{% endif %}; color: {% if entry and entry.bass %}#000{% else %}#000{% endif %};">B</div>
     </div>
-    <div id="text"></div>
+    <div id="text">{% if entry and entry.text %}{{ entry.text }}{% else %}{{ now|time:"H:i" }}{% endif %}</div>
     <script>
-        const colors = { sopran: 'red', alt: 'yellow', tenor: 'green', bass: 'blue' };
-        const elems = {
-            sopran: document.getElementById('sopran'),
-            alt: document.getElementById('alt'),
-            tenor: document.getElementById('tenor'),
-            bass: document.getElementById('bass')
-        };
-        const textDiv = document.getElementById('text');
-        function render() {
-            const stored = JSON.parse(localStorage.getItem('anzeige') || '{}');
-            const now = Date.now();
-            if (stored.expire && now > stored.expire) {
-                localStorage.removeItem('anzeige');
-                Object.keys(colors).forEach(k => elems[k].style.background = '#000');
-                Object.keys(colors).forEach(k => elems[k].style.color = '#000');
-                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-                return;
+        if (!"{{ entry.text|default:'' }}") {
+            const textDiv = document.getElementById('text');
+            function updateTime() {
+                const now = new Date();
+                textDiv.textContent = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
             }
-            let active = false;
-            Object.keys(colors).forEach(k => {
-                if (stored[k]) {
-                    elems[k].style.background = colors[k];
-                    elems[k].style.color = '#000';
-                    active = true;
-                } else {
-                    elems[k].style.background = '#000';
-                    elems[k].style.color = '#000';
-                }
-            });
-            if (stored.text) {
-                textDiv.textContent = stored.text;
-            } else {
-                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-            }
+            setInterval(updateTime, 60000);
         }
-        render();
-        setInterval(render, 1000);
     </script>
 </body>
 </html>

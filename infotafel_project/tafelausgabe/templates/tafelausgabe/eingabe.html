@@ -77,18 +77,28 @@
     </style>
 </head>
 <body>
-    <form id="eingabe">
-        <textarea id="text" placeholder="Liedtext"></textarea>
+    <form id="eingabe" method="post">
+        {% csrf_token %}
+        <textarea id="text" name="text" placeholder="Liedtext">{{ text }}</textarea>
         <div class="voices">
-            <label><input id="sopran" type="checkbox"> Sopran</label>
-            <label><input id="alt" type="checkbox"> Alt</label>
-            <label><input id="tenor" type="checkbox"> Tenor</label>
-            <label><input id="bass" type="checkbox"> Bass</label>
+            <label><input id="sopran" name="sopran" type="checkbox" {% if sopran %}checked{% endif %}> Sopran</label>
+            <label><input id="alt" name="alt" type="checkbox" {% if alt %}checked{% endif %}> Alt</label>
+            <label><input id="tenor" name="tenor" type="checkbox" {% if tenor %}checked{% endif %}> Tenor</label>
+            <label><input id="bass" name="bass" type="checkbox" {% if bass %}checked{% endif %}> Bass</label>
         </div>
-        <input id="dauer" type="number" placeholder="Anzeigedauer (Sekunden)" min="1">
+        <input id="dauer" name="dauer" type="number" placeholder="Anzeigedauer (Sekunden)" min="1" value="{{ dauer }}">
         <button type="submit">Senden</button>
-        <p id="status"></p>
+        <p id="status">{{ status }}</p>
     </form>
+
+    <h2>Historie</h2>
+    <ul>
+        {% for e in history %}
+        <li>{{ e.created|date:"d.m.Y H:i" }}: {{ e.text|default:"(leer)" }}</li>
+        {% empty %}
+        <li>Keine Einträge</li>
+        {% endfor %}
+    </ul>
 
     <div id="preview">
         <div id="p_voices">
@@ -126,21 +136,6 @@
             el.addEventListener('change', updatePreview);
         });
         updatePreview();
-
-        document.getElementById('eingabe').addEventListener('submit', function(e){
-            e.preventDefault();
-            const data = {
-                text: document.getElementById('text').value.trim(),
-                sopran: document.getElementById('sopran').checked,
-                alt: document.getElementById('alt').checked,
-                tenor: document.getElementById('tenor').checked,
-                bass: document.getElementById('bass').checked,
-                expire: Date.now() + (parseInt(document.getElementById('dauer').value, 10) || 0) * 1000
-            };
-            localStorage.setItem('anzeige', JSON.stringify(data));
-            document.getElementById('status').textContent = 'Gespeichert';
-            updatePreview();
-        });
     </script>
 </body>
 </html>
