@@ -24,10 +24,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #000;
-            color: #000;
             font-weight: bold;
+            color: rgb(0, 0, 0);
         }
+        .active-tenor { background: green; color: black; }
+        .active-sopran { background: red; color: black; }
+        .active-alt { background: yellow; color: black; }
+        .active-bass { background: blue; color: black; }
+
         #text {
             flex: 1;
             display: flex;
@@ -35,27 +39,60 @@
             justify-content: center;
             text-align: center;
             padding: 1rem;
-            font-size: clamp(20px, 8vw, 30px);
+            overflow: hidden;
+            word-break: break-word;
+        }
+        #text > span {
+            display: inline-block;
+            width: 100%;
+            line-height: 1.1;
+            white-space: pre-wrap;
+            font-size: 30vw; /* Startgröße */
         }
     </style>
 </head>
 <body>
     <div id="voices">
-        <div id="tenor" class="voice" style="background: {% if entry and entry.tenor %}green{% else %}#000{% endif %}; color: {% if entry and entry.tenor %}#000{% else %}#000{% endif %};">T</div>
-        <div id="sopran" class="voice" style="background: {% if entry and entry.sopran %}red{% else %}#000{% endif %}; color: {% if entry and entry.sopran %}#000{% else %}#000{% endif %};">S</div>
-        <div id="alt" class="voice" style="background: {% if entry and entry.alt %}yellow{% else %}#000{% endif %}; color: {% if entry and entry.alt %}#000{% else %}#000{% endif %};">A</div>
-        <div id="bass" class="voice" style="background: {% if entry and entry.bass %}blue{% else %}#000{% endif %}; color: {% if entry and entry.bass %}#000{% else %}#000{% endif %};">B</div>
+        <div id="tenor" class="voice {% if entry and entry.tenor %}active-tenor{% endif %}">T</div>
+        <div id="sopran" class="voice {% if entry and entry.sopran %}active-sopran{% endif %}">S</div>
+        <div id="alt" class="voice {% if entry and entry.alt %}active-alt{% endif %}">A</div>
+        <div id="bass" class="voice {% if entry and entry.bass %}active-bass{% endif %}">B</div>
     </div>
-    <div id="text">{% if entry and entry.text %}{{ entry.text }}{% else %}{{ now|time:"H:i" }}{% endif %}</div>
+
+    <div id="text">
+        <span>{% if entry and entry.text %}{{ entry.text }}{% else %}{{ now|time:"H:i" }}{% endif %}</span>
+    </div>
+
     <script>
-        if (!"{{ entry.text|default:'' }}") {
-            const textDiv = document.getElementById('text');
-            function updateTime() {
-                const now = new Date();
-                textDiv.textContent = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-            }
-            setInterval(updateTime, 60000);
+    function fitTextToContainer() {
+        const container = document.getElementById('text');
+        const span = container.querySelector('span');
+        if (!span) return;
+
+        let fontSize = 30; // Start in vw
+        span.style.fontSize = fontSize + "vw";
+
+        // Verkleinern bis es passt
+        while ((span.scrollWidth > container.clientWidth || span.scrollHeight > container.clientHeight) && fontSize > 1) {
+            fontSize -= 1;
+            span.style.fontSize = fontSize + "vw";
         }
+    }
+
+    // Falls kein Text da ist → Uhr anzeigen
+    {% if not entry or not entry.text %}
+        function updateTime() {
+            const span = document.querySelector('#text span');
+            const now = new Date();
+            span.textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            fitTextToContainer();
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+    {% endif %}
+
+    window.addEventListener('load', fitTextToContainer);
+    window.addEventListener('resize', fitTextToContainer);
     </script>
 </body>
 </html>
