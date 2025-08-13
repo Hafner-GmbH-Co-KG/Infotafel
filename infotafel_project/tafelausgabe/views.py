@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import Eintrag
@@ -20,12 +21,14 @@ def anzeige(request):
 
 @login_required
 def eingabe(request):
-    status = ""
-    dauer = request.POST.get("dauer", "")
+    """Handle form input and show user's history."""
+    status = "Gespeichert" if request.GET.get("saved") == "1" else ""
+    dauer = ""
     text = ""
     sopran = alt = tenor = bass = False
 
     if request.method == "POST":
+        dauer = request.POST.get("dauer", "")
         text = request.POST.get("text", "").strip()
         sopran = request.POST.get("sopran") == "on"
         alt = request.POST.get("alt") == "on"
@@ -46,9 +49,7 @@ def eingabe(request):
             bass=bass,
             expire=expire,
         )
-        status = "Gespeichert"
-        text = ""
-        sopran = alt = tenor = bass = False
+        return redirect(f"{reverse('eingabe')}?saved=1")
 
     history = Eintrag.objects.filter(user=request.user).order_by("-created")[:10]
     context = {
