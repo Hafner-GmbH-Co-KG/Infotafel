@@ -11,48 +11,96 @@
             color: #000;
             font-family: Arial, sans-serif;
             display: flex;
-            justify-content: center;
-            padding: 1rem;
-        }
-        form {
-            display: flex;
             flex-direction: column;
             gap: 1rem;
+            padding: 1rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
             width: 100%;
-            max-width: 500px;
+            margin: 0 auto;
+            max-width: 1100px;
+            flex: 1;
+        }
+        form, section, #preview {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        form label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-weight: bold;
         }
         textarea {
             width: 100%;
-            height: 200px;
+            min-height: 200px;
             font-size: 1rem;
             padding: 0.5rem;
+            resize: vertical;
         }
         .voices {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
         }
         .voices label {
-            flex: 1;
+            font-weight: normal;
             display: flex;
             align-items: center;
-            gap: 0.25rem;
+            gap: 0.5rem;
         }
-        input[type="number"], button {
+        input[type="number"], select, input[type="text"], input[type="password"] {
             padding: 0.5rem;
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
         button {
-            background: #ccc;
+            padding: 0.75rem;
+            font-size: 1rem;
             border: none;
+            border-radius: 8px;
+            background: #0057b8;
+            color: #fff;
             cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        button.secondary {
+            background: #666;
+        }
+        button.danger {
+            background: #b80000;
+        }
+        button:hover {
+            background: #0041a3;
+        }
+        button.secondary:hover {
+            background: #555;
+        }
+        button.danger:hover {
+            background: #8f0000;
+        }
+        #status {
+            min-height: 1.5rem;
+            font-weight: bold;
         }
         #preview {
-            margin-top: 1rem;
             background: #000;
             color: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        #preview #p_voices {
             display: flex;
-            flex-direction: column;
-            height: 200px;
+            width: 100%;
         }
         #preview .voice {
             flex: 1;
@@ -64,43 +112,125 @@
             justify-content: center;
             font-weight: bold;
         }
-        #preview #p_voices { display: flex; width: 100%; }
         #preview #p_text {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: .5rem;
-            font-size: clamp(16px, 6vw, 24px);
+            padding: 1rem;
+            min-height: 160px;
+            font-size: clamp(16px, 4vw, 28px);
+        }
+        #shareLink {
+            width: 100%;
+            font-size: 0.95rem;
+        }
+        ul#monitorList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        ul#monitorList li {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        ul#monitorList li header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .share-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .share-row button {
+            flex: none;
+        }
+        .share-row input {
+            flex: 1;
         }
     </style>
 </head>
 <body>
-    <form id="eingabe">
-        <textarea id="text" placeholder="Liedtext"></textarea>
-        <div class="voices">
-            <label><input id="sopran" type="checkbox"> Sopran</label>
-            <label><input id="alt" type="checkbox"> Alt</label>
-            <label><input id="tenor" type="checkbox"> Tenor</label>
-            <label><input id="bass" type="checkbox"> Bass</label>
-        </div>
-        <input id="dauer" type="number" placeholder="Anzeigedauer (Sekunden)" min="1">
-        <button type="submit">Senden</button>
-        <p id="status"></p>
-    </form>
+    <h1>Infotafel verwalten</h1>
+    <main>
+        <form id="eingabe">
+            <label>
+                Monitor auswählen
+                <select id="monitor"></select>
+            </label>
+            <label>
+                Liedtext oder Information
+                <textarea id="text" placeholder="Liedtext"></textarea>
+            </label>
+            <div class="voices">
+                <label><input id="sopran" type="checkbox"> Sopran</label>
+                <label><input id="alt" type="checkbox"> Alt</label>
+                <label><input id="tenor" type="checkbox"> Tenor</label>
+                <label><input id="bass" type="checkbox"> Bass</label>
+            </div>
+            <label>
+                Anzeigedauer (Sekunden)
+                <input id="dauer" type="number" min="0" placeholder="z. B. 300">
+            </label>
+            <button type="submit">Anzeige aktualisieren</button>
+            <p id="status"></p>
+        </form>
 
-    <div id="preview">
-        <div id="p_voices">
-            <div id="p_tenor" class="voice">T</div>
-            <div id="p_sopran" class="voice">S</div>
-            <div id="p_alt" class="voice">A</div>
-            <div id="p_bass" class="voice">B</div>
+        <div id="preview">
+            <div id="p_voices">
+                <div id="p_tenor" class="voice">T</div>
+                <div id="p_sopran" class="voice">S</div>
+                <div id="p_alt" class="voice">A</div>
+                <div id="p_bass" class="voice">B</div>
+            </div>
+            <div id="p_text"></div>
         </div>
-        <div id="p_text"></div>
-    </div>
+
+        <section id="sharing">
+            <h2>Anzeige teilen</h2>
+            <p>Teile den Link mit anderen Geräten, um die ausgewählte Anzeige anzuzeigen.</p>
+            <div class="share-row">
+                <input id="shareLink" type="text" readonly>
+                <button type="button" id="copyLink" class="secondary">Link kopieren</button>
+            </div>
+            <p id="shareStatus"></p>
+        </section>
+
+        <section id="admin">
+            <h2>Virtuelle Monitore verwalten</h2>
+            <label>
+                Admin-Code
+                <input id="adminToken" type="password" placeholder="Admin-Code eingeben">
+            </label>
+            <div class="share-row">
+                <input id="monitorName" type="text" placeholder="Neuer Monitorname">
+                <button type="button" id="createMonitor">Monitor anlegen</button>
+            </div>
+            <ul id="monitorList"></ul>
+        </section>
+    </main>
 
     <script>
+        const API_BASE = 'scripts/speicher.php';
+        const DEFAULT_MONITOR = 'main';
+        const monitorSelect = document.getElementById('monitor');
+        const statusText = document.getElementById('status');
+        const shareInput = document.getElementById('shareLink');
+        const shareStatus = document.getElementById('shareStatus');
+        const adminTokenInput = document.getElementById('adminToken');
+        const monitorList = document.getElementById('monitorList');
+        const monitorNameInput = document.getElementById('monitorName');
         const pvColors = { sopran: 'red', alt: 'yellow', tenor: 'green', bass: 'blue' };
         const pvElems = {
             sopran: document.getElementById('p_sopran'),
@@ -110,37 +240,224 @@
         };
         const pvText = document.getElementById('p_text');
 
-        function updatePreview() {
-            const textVal = document.getElementById('text').value.trim();
-            ['sopran', 'alt', 'tenor', 'bass'].forEach(k => {
-                const checked = document.getElementById(k).checked;
-                pvElems[k].style.background = checked ? pvColors[k] : '#000';
-                pvElems[k].style.color = checked ? '#000' : '#000';
-            });
-            pvText.textContent = textVal || new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+        function baseShareUrl() {
+            const url = new URL(window.location.href);
+            url.pathname = url.pathname.replace(/input\.html$/, 'index.html');
+            url.search = '';
+            url.hash = '';
+            return url;
         }
 
-        ['text','sopran','alt','tenor','bass','dauer'].forEach(id => {
-            const el = document.getElementById(id);
-            el.addEventListener('input', updatePreview);
-            el.addEventListener('change', updatePreview);
-        });
-        updatePreview();
+        function buildShareLink(monitorId) {
+            const url = baseShareUrl();
+            url.searchParams.set('monitor', monitorId);
+            return url.toString();
+        }
 
-        document.getElementById('eingabe').addEventListener('submit', function(e){
-            e.preventDefault();
-            const data = {
+        function updateShareLink() {
+            const monitorId = monitorSelect.value;
+            if (!monitorId) {
+                shareInput.value = '';
+                return;
+            }
+            shareInput.value = buildShareLink(monitorId);
+            shareStatus.textContent = '';
+        }
+
+        function updatePreview() {
+            const textVal = document.getElementById('text').value.trim();
+            ['sopran', 'alt', 'tenor', 'bass'].forEach(key => {
+                const checked = document.getElementById(key).checked;
+                pvElems[key].style.background = checked ? pvColors[key] : '#000';
+                pvElems[key].style.color = checked ? '#000' : '#000';
+            });
+            pvText.textContent = textVal || new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function loadMonitors(selectedId) {
+            try {
+                const response = await fetch(`${API_BASE}?action=getMonitors&t=${Date.now()}`, { cache: 'no-store' });
+                const payload = await response.json();
+                if (!payload.success) {
+                    throw new Error(payload.error || 'Monitore konnten nicht geladen werden.');
+                }
+                renderMonitorOptions(payload.monitors, selectedId);
+                renderMonitorList(payload.monitors);
+            } catch (error) {
+                statusText.textContent = error.message;
+            }
+        }
+
+        function renderMonitorOptions(monitors, selectedId) {
+            const previous = selectedId || localStorage.getItem('infotafel.monitor') || DEFAULT_MONITOR;
+            monitorSelect.innerHTML = '';
+            monitors.forEach(monitor => {
+                const option = document.createElement('option');
+                option.value = monitor.id;
+                option.textContent = monitor.name;
+                if (monitor.id === previous) {
+                    option.selected = true;
+                }
+                monitorSelect.appendChild(option);
+            });
+            if (!monitorSelect.value && monitors.length > 0) {
+                monitorSelect.value = monitors[0].id;
+            }
+            localStorage.setItem('infotafel.monitor', monitorSelect.value);
+            updateShareLink();
+        }
+
+        function renderMonitorList(monitors) {
+            monitorList.innerHTML = '';
+            monitors.forEach(monitor => {
+                const item = document.createElement('li');
+                const header = document.createElement('header');
+                const title = document.createElement('span');
+                title.textContent = `${monitor.name} (${monitor.id})`;
+                header.appendChild(title);
+                if (monitor.id !== DEFAULT_MONITOR) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.textContent = 'Löschen';
+                    deleteBtn.classList.add('danger');
+                    deleteBtn.addEventListener('click', () => deleteMonitor(monitor.id));
+                    header.appendChild(deleteBtn);
+                }
+                item.appendChild(header);
+                const link = document.createElement('a');
+                link.href = buildShareLink(monitor.id);
+                link.textContent = link.href;
+                link.target = '_blank';
+                item.appendChild(link);
+                monitorList.appendChild(item);
+            });
+        }
+
+        async function saveDisplay(event) {
+            event.preventDefault();
+            const monitorId = monitorSelect.value;
+            const payload = {
+                action: 'saveDisplay',
+                monitor: monitorId,
                 text: document.getElementById('text').value.trim(),
                 sopran: document.getElementById('sopran').checked,
                 alt: document.getElementById('alt').checked,
                 tenor: document.getElementById('tenor').checked,
                 bass: document.getElementById('bass').checked,
-                expire: Date.now() + (parseInt(document.getElementById('dauer').value, 10) || 0) * 1000
+                duration: parseInt(document.getElementById('dauer').value, 10) || 0
             };
-            localStorage.setItem('anzeige', JSON.stringify(data));
-            document.getElementById('status').textContent = 'Gespeichert';
-            updatePreview();
+
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Anzeige konnte nicht gespeichert werden.');
+                }
+                statusText.textContent = 'Anzeige gespeichert';
+                localStorage.setItem('infotafel.monitor', monitorId);
+                updateShareLink();
+                await loadMonitors(monitorId);
+            } catch (error) {
+                statusText.textContent = error.message;
+            }
+        }
+
+        async function createMonitor() {
+            const name = monitorNameInput.value.trim();
+            const token = adminTokenInput.value.trim();
+            if (!name) {
+                shareStatus.textContent = 'Bitte einen Namen eingeben.';
+                return;
+            }
+            if (!token) {
+                shareStatus.textContent = 'Admin-Code wird benötigt.';
+                return;
+            }
+
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'createMonitor', name, token })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Monitor konnte nicht erstellt werden.');
+                }
+                monitorNameInput.value = '';
+                shareStatus.textContent = `Monitor "${result.monitor.name}" erstellt.`;
+                await loadMonitors(result.monitor.id);
+                monitorSelect.value = result.monitor.id;
+                updateShareLink();
+            } catch (error) {
+                shareStatus.textContent = error.message;
+            }
+        }
+
+        async function deleteMonitor(monitorId) {
+            const token = adminTokenInput.value.trim();
+            if (!token) {
+                shareStatus.textContent = 'Zum Löschen ist der Admin-Code erforderlich.';
+                return;
+            }
+            if (!confirm('Soll dieser Monitor wirklich gelöscht werden?')) {
+                return;
+            }
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteMonitor', monitor: monitorId, token })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Monitor konnte nicht gelöscht werden.');
+                }
+                shareStatus.textContent = 'Monitor gelöscht.';
+                const selected = monitorSelect.value === monitorId ? DEFAULT_MONITOR : monitorSelect.value;
+                await loadMonitors(selected);
+            } catch (error) {
+                shareStatus.textContent = error.message;
+            }
+        }
+
+        document.getElementById('eingabe').addEventListener('submit', saveDisplay);
+        document.getElementById('copyLink').addEventListener('click', async () => {
+            if (!shareInput.value) {
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(shareInput.value);
+                shareStatus.textContent = 'Link in die Zwischenablage kopiert.';
+            } catch (error) {
+                shareStatus.textContent = 'Kopieren nicht möglich: ' + error.message;
+            }
         });
+        document.getElementById('createMonitor').addEventListener('click', createMonitor);
+        monitorSelect.addEventListener('change', () => {
+            localStorage.setItem('infotafel.monitor', monitorSelect.value);
+            updateShareLink();
+        });
+        ['text','sopran','alt','tenor','bass','dauer'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        });
+
+        const storedToken = localStorage.getItem('infotafel.adminToken');
+        if (storedToken) {
+            adminTokenInput.value = storedToken;
+        }
+        adminTokenInput.addEventListener('change', () => {
+            localStorage.setItem('infotafel.adminToken', adminTokenInput.value.trim());
+        });
+
+        updatePreview();
+        loadMonitors();
     </script>
 </body>
 </html>

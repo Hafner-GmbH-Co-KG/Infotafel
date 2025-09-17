@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Liederanzeige</title>
     <style>
+        :root {
+            color-scheme: dark;
+        }
         body {
             margin: 0;
             background: #000;
@@ -27,15 +30,26 @@
             background: #000;
             color: #000;
             font-weight: bold;
+            transition: background 0.3s ease;
         }
         #text {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 1rem;
-            font-size: clamp(20px, 8vw, 30px);
+            font-size: clamp(24px, 7vw, 48px);
+            gap: 1rem;
+        }
+        #message {
+            font-size: clamp(16px, 3vw, 28px);
+            color: #ff8c69;
+        }
+        #meta {
+            font-size: clamp(12px, 2vw, 18px);
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -46,8 +60,14 @@
         <div id="alt" class="voice">A</div>
         <div id="bass" class="voice">B</div>
     </div>
-    <div id="text"></div>
+    <div id="text">
+        <div id="content"></div>
+        <div id="message"></div>
+        <div id="meta"></div>
+    </div>
     <script>
+        const params = new URLSearchParams(window.location.search);
+        const monitorId = params.get('monitor') || 'main';
         const colors = { sopran: 'red', alt: 'yellow', tenor: 'green', bass: 'blue' };
         const elems = {
             sopran: document.getElementById('sopran'),
@@ -55,36 +75,116 @@
             tenor: document.getElementById('tenor'),
             bass: document.getElementById('bass')
         };
-        const textDiv = document.getElementById('text');
-        function render() {
-            const stored = JSON.parse(localStorage.getItem('anzeige') || '{}');
-            const now = Date.now();
-            if (stored.expire && now > stored.expire) {
-                localStorage.removeItem('anzeige');
-                Object.keys(colors).forEach(k => elems[k].style.background = '#000');
-                Object.keys(colors).forEach(k => elems[k].style.color = '#000');
-                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-                return;
-            }
-            let active = false;
-            Object.keys(colors).forEach(k => {
-                if (stored[k]) {
-                    elems[k].style.background = colors[k];
-                    elems[k].style.color = '#000';
-                    active = true;
-                } else {
-                    elems[k].style.background = '#000';
-                    elems[k].style.color = '#000';
+        const textDiv = document.getElementById('content');
+        const messageDiv = document.getElementById('message');
+        const metaDiv = document.getElementById('meta');
+
+        let lastPayload = null;
+        let archiving = false;
+
+        async function fetchDisplay() {
+            try {
+                const url = `scripts/speicher.php?action=getDisplay&monitor=${encodeURIComponent(monitorId)}&t=${Date.now()}`;
+                const response = await fetch(url, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Serverfehler (${response.status})`);
                 }
-            });
-            if (stored.text) {
-                textDiv.textContent = stored.text;
-            } else {
-                textDiv.textContent = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+                const payload = await response.json();
+                if (!payload.success) {
+                    throw new Error(payload.error || 'Unbekannter Fehler');
+                }
+                lastPayload = payload.monitor;
+                document.title = `Liederanzeige – ${payload.monitor.name}`;
+                renderDisplay(payload.monitor.display);
+                renderMeta(payload.monitor);
+                if (shouldArchive(payload.monitor.display)) {
+                    await archiveDisplay();
+                }
+            } catch (err) {
+                showError(err.message);
             }
         }
-        render();
-        setInterval(render, 1000);
+
+        function renderDisplay(display) {
+            messageDiv.textContent = '';
+            if (!display || !display.text) {
+                const now = new Date();
+                const time = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                textDiv.textContent = time;
+            } else {
+                textDiv.textContent = display.text;
+            }
+
+            Object.keys(colors).forEach(key => {
+                if (display && display[key]) {
+                    elems[key].style.background = colors[key];
+                    elems[key].style.color = '#000';
+                } else {
+                    elems[key].style.background = '#000';
+                    elems[key].style.color = '#000';
+                }
+            });
+        }
+
+        function renderMeta(monitor) {
+            const display = monitor.display || {};
+            const updated = display.updated_at ? new Date(display.updated_at).toLocaleString('de-DE') : '';
+            const expires = display.expires_at ? new Date(display.expires_at * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : null;
+            const parts = [];
+            if (updated) {
+                parts.push(`Aktualisiert: ${updated}`);
+            }
+            if (expires) {
+                parts.push(`Läuft ab: ${expires}`);
+            } else if (display.text) {
+                parts.push('Keine automatische Archivierung');
+            }
+            metaDiv.textContent = parts.join(' · ');
+        }
+
+        function shouldArchive(display) {
+            if (!display || !display.text) {
+                return false;
+            }
+            if (!display.expires_at) {
+                return false;
+            }
+            const expiresAtMs = display.expires_at * 1000;
+            return Date.now() >= expiresAtMs;
+        }
+
+        async function archiveDisplay() {
+            if (archiving || !lastPayload) {
+                return;
+            }
+            archiving = true;
+            try {
+                const response = await fetch('scripts/archive.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monitor: lastPayload.id })
+                });
+                if (response.ok) {
+                    await fetchDisplay();
+                }
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                archiving = false;
+            }
+        }
+
+        function showError(message) {
+            messageDiv.textContent = message;
+            textDiv.textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            Object.keys(colors).forEach(key => {
+                elems[key].style.background = '#000';
+                elems[key].style.color = '#000';
+            });
+        }
+
+        fetchDisplay();
+        setInterval(fetchDisplay, 5000);
     </script>
 </body>
 </html>
