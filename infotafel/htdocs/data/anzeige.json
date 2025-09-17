@@ -1,7 +1,11 @@
 {
-  "text": "",
-  "sopran": false,
-  "alt": false,
-  "tenor": false,
-  "bass": false
+  "main": {
+    "text": "",
+    "sopran": false,
+    "alt": false,
+    "tenor": false,
+    "bass": false,
+    "updated_at": null,
+    "expires_at": null
+  }
 }

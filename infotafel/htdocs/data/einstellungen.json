@@ -1,3 +1,5 @@
 {
-  "anzeigedauer": 300
+  "main": {
+    "anzeigedauer": 300
+  }
 }
