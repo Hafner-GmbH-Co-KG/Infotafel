@@ -1,8 +1,14 @@
 [
-  {
-    "id": "main",
-    "name": "Hauptanzeige",
-    "slug": "hauptanzeige",
-    "created_at": "2024-01-01T00:00:00+00:00"
-  }
+    {
+        "id": "main",
+        "name": "Hauptanzeige",
+        "slug": "hauptanzeige",
+        "created_at": "2024-01-01T00:00:00+00:00"
+    },
+    {
+        "id": "test",
+        "name": "Test",
+        "slug": "test",
+        "created_at": "2025-09-17T07:34:42+00:00"
+    }
 ]
