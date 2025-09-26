@@ -1,21 +1,36 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.http import require_GET
 
 from .models import Eintrag
+from .services import resolve_display_for_monitor, serialize_display_context
 
 
-def anzeige(request):
-    now = timezone.now()
-    entry = (
-        Eintrag.objects.filter(Q(expire__isnull=True) | Q(expire__gt=now))
-        .order_by("-created")
-        .first()
+def anzeige(request, identifier=None):
+    monitor_identifier = identifier or request.GET.get("monitor")
+    display_context = resolve_display_for_monitor(monitor_identifier)
+    display_payload = serialize_display_context(display_context)
+    return render(
+        request,
+        "tafelausgabe/anzeige.html",
+        {
+            "display": display_payload,
+            "monitor": display_payload.get("monitor", {}),
+            "now": timezone.now(),
+        },
     )
-    return render(request, "tafelausgabe/anzeige.html", {"entry": entry, "now": now})
+
+
+@require_GET
+def monitor_state_api(request, identifier=None):
+    monitor_identifier = identifier or request.GET.get("monitor")
+    display_context = resolve_display_for_monitor(monitor_identifier)
+    payload = serialize_display_context(display_context)
+    return JsonResponse(payload)
 
 
 @login_required
