@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monitore verwalten</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #202020;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: #0d47a1;
+            color: #fff;
+            padding: 1.5rem 1rem;
+        }
+        header h1 {
+            margin: 0;
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+        }
+        main {
+            flex: 1;
+            padding: 1.5rem 1rem 3rem;
+            display: grid;
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        section, article {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 1.25rem;
+        }
+        form {
+            display: grid;
+            gap: 1rem;
+        }
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-weight: 600;
+        }
+        input[type="text"], textarea, select {
+            font-size: 1rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #c5c5c5;
+        }
+        input[type="checkbox"] {
+            transform: scale(1.1);
+        }
+        button {
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            border: none;
+            background: #0d47a1;
+            color: #fff;
+            transition: background 0.2s ease;
+        }
+        a.secondary {
+            display: inline-block;
+            text-decoration: none;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            background: #555;
+            color: #fff;
+            transition: background 0.2s ease;
+        }
+        a.secondary:hover {
+            background: #3d3d3d;
+        }
+        button.secondary {
+            background: #555;
+        }
+        button.danger {
+            background: #bb1f1f;
+        }
+        button:hover {
+            background: #0b3a82;
+        }
+        button.secondary:hover {
+            background: #3d3d3d;
+        }
+        button.danger:hover {
+            background: #921616;
+        }
+        .messages {
+            display: grid;
+            gap: 0.5rem;
+        }
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+        .message.error { background: #ffebee; color: #c62828; }
+        .monitor-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        .share-row {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .share-row input {
+            flex: 1;
+            min-width: 200px;
+        }
+        .meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Virtuelle Monitore verwalten</h1>
+    </header>
+    <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <section>
+            <h2>Neuen Monitor anlegen</h2>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="mode" value="create">
+                <label>
+                    {{ create_form.name.label }}
+                    {{ create_form.name }}
+                </label>
+                <label>
+                    {{ create_form.identifier.label }}
+                    {{ create_form.identifier }}
+                    <small>{{ create_form.identifier.help_text }}</small>
+                </label>
+                <label>
+                    {{ create_form.role.label }}
+                    {{ create_form.role }}
+                </label>
+                <label>
+                    {{ create_form.description.label }}
+                    {{ create_form.description }}
+                </label>
+                <label>
+                    {{ create_form.is_active }} {{ create_form.is_active.label }}
+                </label>
+                {% if create_form.errors %}
+                <div class="message error">
+                    {% for field, errors in create_form.errors.items %}
+                        {% for error in errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <button type="submit">Monitor anlegen</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Vorhandene Monitore</h2>
+            <div class="monitor-grid">
+                {% for monitor in monitors %}
+                <article>
+                    <header>
+                        <h3>{{ monitor.name }}</h3>
+                        <div class="meta">Kurzname: {{ monitor.identifier }} - Rolle: {{ monitor.get_role_display }} - Aktiv: {{ monitor.is_active|yesno:"Ja,Nein" }}</div>
+                    </header>
+                    {% if monitor.description %}
+                    <p>{{ monitor.description }}</p>
+                    {% endif %}
+                    <div class="share-row">
+                        <input type="text" value="{{ monitor.share_link }}" readonly data-share-input>
+                        <button type="button" class="secondary" data-copy-button>Kopieren</button>
+                        <a class="secondary" href="{{ monitor.share_link }}" target="_blank" rel="noopener">Anzeigen</a>
+                    </div>
+                    <form method="post" style="margin-top: 1rem;">
+                        {% csrf_token %}
+                        <input type="hidden" name="mode" value="delete">
+                        <input type="hidden" name="monitor_id" value="{{ monitor.pk }}">
+                        <button type="submit" class="danger">Monitor loeschen</button>
+                    </form>
+                </article>
+                {% empty %}
+                <p>Es wurden noch keine Monitore angelegt.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <script>
+        document.querySelectorAll('[data-copy-button]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var input = button.parentElement.querySelector('[data-share-input]');
+                if (!input) {
+                    return;
+                }
+                input.select();
+                try {
+                    var successful = document.execCommand('copy');
+                    if (successful) {
+                        button.textContent = 'Kopiert!';
+                        setTimeout(function() { button.textContent = 'Kopieren'; }, 1500);
+                    }
+                } catch (err) {
+                    console.warn('Clipboard copy failed', err);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

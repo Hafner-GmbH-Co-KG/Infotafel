@@ -1,275 +1,359 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Liederanzeige</title>
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .hidden {
-            display: none !important;
-        }
-        #voices {
-            display: flex;
-            width: 100%;
-        }
-        .voice {
-            flex: 1;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #000;
-        }
-        .active-tenor { background: green; }
-        .active-sopran { background: red; }
-        .active-alt { background: yellow; }
-        .active-bass { background: blue; }
-
-        #text {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 1rem;
-            overflow: hidden;
-            word-break: break-word;
-        }
-        #text > span {
-            display: inline-block;
-            width: 100%;
-            line-height: 1.1;
-            white-space: pre-wrap;
-            font-size: 30vw;
-        }
-        #reference,
-        #notes {
-            padding: 0.5rem 1rem;
-            text-align: center;
-            font-size: clamp(1rem, 2.5vw, 1.5rem);
-        }
-        #reference {
-            background: rgba(255, 255, 255, 0.08);
-        }
-        #notes {
-            font-style: italic;
-            background: rgba(255, 255, 255, 0.05);
-        }
-    </style>
-</head>
-<body data-monitor="{{ display.monitor.identifier|default:'default' }}">
-    {% with content=display.content layers=display.layers %}
-    <div id="voices" class="{% if not layers.voices %}hidden{% endif %}">
-        <div id="tenor" class="voice {% if content.voices.tenor %}active-tenor{% endif %}">T</div>
-        <div id="sopran" class="voice {% if content.voices.sopran %}active-sopran{% endif %}">S</div>
-        <div id="alt" class="voice {% if content.voices.alt %}active-alt{% endif %}">A</div>
-        <div id="bass" class="voice {% if content.voices.bass %}active-bass{% endif %}">B</div>
-    </div>
-
-    <div id="text" class="{% if layers.lyrics is defined and not layers.lyrics %}hidden{% endif %}">
-        <span>{% if content.text %}{{ content.text }}{% else %}{{ now|time:"H:i" }}{% endif %}</span>
-    </div>
-
-    <div id="reference" class="{% if not layers.bible_reference or not content.bible_reference %}hidden{% endif %}">
-        {% if content.bible_reference %}
-            {{ content.bible_reference.reference }}
-            {% if content.bible_reference.translation %}
-                ({{ content.bible_reference.translation }})
-            {% endif %}
-        {% endif %}
-    </div>
-
-    <div id="notes" class="{% if not layers.notes or not content.notes %}hidden{% endif %}">{{ content.notes }}</div>
-    {% endwith %}
-
-    {{ display|json_script:"initial-display" }}
-
-    <script>
-    (function () {
-        const defaultLayers = { lyrics: true, voices: true, bible_reference: true, notes: false, next_slide: false };
-        const voiceClassMap = {
-            sopran: 'active-sopran',
-            alt: 'active-alt',
-            tenor: 'active-tenor',
-            bass: 'active-bass'
-        };
-
-        const voicesContainer = document.getElementById('voices');
-        const voiceElements = {
-            sopran: document.getElementById('sopran'),
-            alt: document.getElementById('alt'),
-            tenor: document.getElementById('tenor'),
-            bass: document.getElementById('bass')
-        };
-        const textContainer = document.getElementById('text');
-        const textSpan = textContainer ? textContainer.querySelector('span') : null;
-        const referenceEl = document.getElementById('reference');
-        const notesEl = document.getElementById('notes');
-        const monitorId = document.body.dataset.monitor || '';
-        const apiEndpoint = monitorId && monitorId !== 'default'
-            ? `/api/monitor/${encodeURIComponent(monitorId)}/`
-            : '/api/monitor/';
-
-        let clockInterval = null;
-        let pollTimeout = null;
-        let pollingDelay = 4000;
-
-        function fitTextToContainer() {
-            if (!textContainer || !textSpan || textContainer.classList.contains('hidden')) {
-                return;
-            }
-            let fontSize = 30;
-            textSpan.style.fontSize = fontSize + 'vw';
-            while ((textSpan.scrollWidth > textContainer.clientWidth || textSpan.scrollHeight > textContainer.clientHeight) && fontSize > 1) {
-                fontSize -= 1;
-                textSpan.style.fontSize = fontSize + 'vw';
-            }
-        }
-
-        function stopClock() {
-            if (clockInterval) {
-                clearInterval(clockInterval);
-                clockInterval = null;
-            }
-        }
-
-        function updateClock() {
-            if (!textSpan) {
-                return;
-            }
-            const now = new Date();
-            textSpan.textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            fitTextToContainer();
-        }
-
-        function startClock() {
-            updateClock();
-            if (!clockInterval) {
-                clockInterval = setInterval(updateClock, 60000);
-            }
-        }
-
-        function applyState(payload) {
-            if (!payload) {
-                return;
-            }
-            const layers = Object.assign({}, defaultLayers, payload.layers || {});
-            const content = payload.content || {};
-            const voices = Object.assign({ sopran: false, alt: false, tenor: false, bass: false }, content.voices || {});
-
-            voicesContainer.classList.toggle('hidden', !layers.voices);
-            Object.entries(voiceClassMap).forEach(([voice, className]) => {
-                const element = voiceElements[voice];
-                if (element) {
-                    element.classList.toggle(className, Boolean(voices[voice]));
-                }
-            });
-
-            if (textContainer && textSpan) {
-                if (layers.lyrics === false) {
-                    textContainer.classList.add('hidden');
-                    textSpan.textContent = '';
-                    stopClock();
-                } else {
-                    textContainer.classList.remove('hidden');
-                    const rawText = typeof content.text === 'string' ? content.text.trim() : '';
-                    if (rawText) {
-                        stopClock();
-                        textSpan.textContent = rawText;
-                        fitTextToContainer();
-                    } else {
-                        startClock();
-                    }
-                }
-            }
-
-            if (referenceEl) {
-                const hasReference = layers.bible_reference && content.bible_reference && content.bible_reference.reference;
-                if (hasReference) {
-                    const ref = content.bible_reference;
-                    const translation = ref.translation ? ` (${ref.translation})` : '';
-                    referenceEl.textContent = `${ref.reference}${translation}`;
-                    referenceEl.classList.remove('hidden');
-                } else {
-                    referenceEl.classList.add('hidden');
-                    referenceEl.textContent = '';
-                }
-            }
-
-            if (notesEl) {
-                const hasNotes = layers.notes && typeof content.notes === 'string' && content.notes.trim() !== '';
-                if (hasNotes) {
-                    notesEl.textContent = content.notes;
-                    notesEl.classList.remove('hidden');
-                } else {
-                    notesEl.classList.add('hidden');
-                    notesEl.textContent = '';
-                }
-            }
-
-            if (layers.lyrics !== false) {
-                fitTextToContainer();
-            }
-        }
-
-        async function pollState() {
-            try {
-                const response = await fetch(apiEndpoint, { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                const data = await response.json();
-                applyState(data);
-                pollingDelay = 4000;
-            } catch (error) {
-                pollingDelay = Math.min(Math.max(pollingDelay * 1.5, 4000), 60000);
-            } finally {
-                scheduleNext();
-            }
-        }
-
-        function scheduleNext(delay) {
-            if (pollTimeout) {
-                clearTimeout(pollTimeout);
-                pollTimeout = null;
-            }
-            if (document.hidden) {
-                return;
-            }
-            const nextDelay = typeof delay === 'number' ? delay : pollingDelay;
-            pollTimeout = setTimeout(pollState, nextDelay);
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (pollTimeout) {
-                    clearTimeout(pollTimeout);
-                    pollTimeout = null;
-                }
-            } else {
-                scheduleNext(0);
-            }
-        });
-
-        const initialPayload = JSON.parse(document.getElementById('initial-display').textContent);
-        applyState(initialPayload);
-
-        window.addEventListener('load', () => {
-            fitTextToContainer();
-            scheduleNext();
-        });
-        window.addEventListener('resize', fitTextToContainer);
-    })();
-    </script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Liederanzeige</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --page-bg: #000000;
+            --page-fg: #ffffff;
+            --voice-inactive-bg: #111111;
+            --voice-inactive-color: #ffffff;
+            --overlay-strong: rgba(255, 255, 255, 0.08);
+            --overlay-light: rgba(255, 255, 255, 0.05);
+        }
+        body {
+            margin: 0;
+            background: var(--page-bg);
+            color: var(--page-fg);
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #voices {
+            display: flex;
+            width: 100%;
+        }
+        .voice {
+            flex: 1;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background: var(--voice-inactive-bg);
+            color: var(--voice-inactive-color);
+        }
+        .active-tenor { background: green; color: #000; }
+        .active-sopran { background: red; color: #000; }
+        .active-alt { background: yellow; color: #000; }
+        .active-bass { background: blue; color: #000; }
+
+        #text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            overflow: hidden;
+            word-break: break-word;
+        }
+        #text > span {
+            display: inline-block;
+            width: 100%;
+            line-height: 1.1;
+            white-space: pre-wrap;
+            font-size: 30vw;
+        }
+        #reference,
+        #notes {
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+        }
+        #reference {
+            background: var(--overlay-strong);
+        }
+        #notes {
+            font-style: italic;
+            background: var(--overlay-light);
+        }
+    </style>
+</head>
+<body data-monitor="{{ display.monitor.identifier|default:'default' }}">
+    {% with content=display.content layers=display.layers %}
+    <div id="voices" class="{% if not layers.voices %}hidden{% endif %}">
+        <div id="tenor" class="voice {% if content.voices.tenor %}active-tenor{% endif %}">T</div>
+        <div id="sopran" class="voice {% if content.voices.sopran %}active-sopran{% endif %}">S</div>
+        <div id="alt" class="voice {% if content.voices.alt %}active-alt{% endif %}">A</div>
+        <div id="bass" class="voice {% if content.voices.bass %}active-bass{% endif %}">B</div>
+    </div>
+
+    <div id="text" class="{% if layers.lyrics is defined and not layers.lyrics %}hidden{% endif %}">
+        <span>{% if content.text %}{{ content.text }}{% else %}{{ now|time:"H:i" }}{% endif %}</span>
+    </div>
+
+    <div id="reference" class="{% if not layers.bible_reference or not content.bible_reference %}hidden{% endif %}">
+        {% if content.bible_reference %}
+            {{ content.bible_reference.reference }}
+            {% if content.bible_reference.translation %}
+                ({{ content.bible_reference.translation }})
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div id="notes" class="{% if not layers.notes or not content.notes %}hidden{% endif %}">{{ content.notes }}</div>
+    {% endwith %}
+
+    {{ display|json_script:"initial-display" }}
+
+    <script>
+    (function () {
+        const defaultLayers = { lyrics: true, voices: true, bible_reference: true, notes: false, next_slide: false };
+        const voiceClassMap = {
+            sopran: 'active-sopran',
+            alt: 'active-alt',
+            tenor: 'active-tenor',
+            bass: 'active-bass'
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const STORAGE_KEYS = { background: 'tafelausgabe.backgroundColor' };
+        const defaultTheme = { background: '#000000', textColor: '#ffffff', inactiveBg: '#111111', inactiveColor: '#ffffff', overlayStrong: 'rgba(255, 255, 255, 0.08)', overlayLight: 'rgba(255, 255, 255, 0.05)' };
+        let theme = { ...defaultTheme };
+
+        function normalizeHex(value) {
+            if (typeof value !== 'string') {
+                return '';
+            }
+            const trimmed = value.trim();
+            const match = trimmed.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+            if (!match) {
+                return '';
+            }
+            let hex = match[1].toLowerCase();
+            if (hex.length === 3) {
+                hex = hex.split('').map((ch) => ch + ch).join('');
+            }
+            return `#${hex}`;
+        }
+
+        function shouldUseDarkText(hex) {
+            const value = normalizeHex(hex);
+            if (!value) {
+                return false;
+            }
+            const r = parseInt(value.slice(1, 3), 16) / 255;
+            const g = parseInt(value.slice(3, 5), 16) / 255;
+            const b = parseInt(value.slice(5, 7), 16) / 255;
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            return luminance > 0.6;
+        }
+
+        function resolveBackground() {
+            const urlBg = params.get('bg');
+            if (urlBg) {
+                const normalized = normalizeHex(urlBg);
+                if (normalized) {
+                    localStorage.setItem(STORAGE_KEYS.background, normalized);
+                    return normalized;
+                }
+            }
+            const stored = localStorage.getItem(STORAGE_KEYS.background);
+            if (stored) {
+                const normalized = normalizeHex(stored);
+                if (normalized) {
+                    return normalized;
+                }
+            }
+            return defaultTheme.background;
+        }
+
+        function applyBackground(color) {
+            const normalized = normalizeHex(color) || defaultTheme.background;
+            const useDark = shouldUseDarkText(normalized);
+            theme = {
+                background: normalized,
+                textColor: useDark ? '#000000' : '#ffffff',
+                inactiveBg: useDark ? '#e0e0e0' : '#111111',
+                inactiveColor: useDark ? '#000000' : '#ffffff',
+                overlayStrong: useDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.08)',
+                overlayLight: useDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'
+            };
+            const root = document.documentElement.style;
+            root.setProperty('--page-bg', theme.background);
+            root.setProperty('--page-fg', theme.textColor);
+            root.setProperty('--voice-inactive-bg', theme.inactiveBg);
+            root.setProperty('--voice-inactive-color', theme.inactiveColor);
+            root.setProperty('--overlay-strong', theme.overlayStrong);
+            root.setProperty('--overlay-light', theme.overlayLight);
+        }
+
+        applyBackground(resolveBackground());
+
+        const voicesContainer = document.getElementById('voices');
+        const voiceElements = {
+            sopran: document.getElementById('sopran'),
+            alt: document.getElementById('alt'),
+            tenor: document.getElementById('tenor'),
+            bass: document.getElementById('bass')
+        };
+        const textContainer = document.getElementById('text');
+        const textSpan = textContainer ? textContainer.querySelector('span') : null;
+        const referenceEl = document.getElementById('reference');
+        const notesEl = document.getElementById('notes');
+        const monitorId = document.body.dataset.monitor || '';
+        const apiEndpoint = monitorId && monitorId !== 'default'
+            ? `/api/monitor/${encodeURIComponent(monitorId)}/`
+            : '/api/monitor/';
+
+        let clockInterval = null;
+        let pollTimeout = null;
+        let pollingDelay = 4000;
+
+        function fitTextToContainer() {
+            if (!textContainer || !textSpan || textContainer.classList.contains('hidden')) {
+                return;
+            }
+            let fontSize = 30;
+            textSpan.style.fontSize = fontSize + 'vw';
+            while ((textSpan.scrollWidth > textContainer.clientWidth || textSpan.scrollHeight > textContainer.clientHeight) && fontSize > 1) {
+                fontSize -= 1;
+                textSpan.style.fontSize = fontSize + 'vw';
+            }
+        }
+
+        function stopClock() {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                clockInterval = null;
+            }
+        }
+
+        function updateClock() {
+            if (!textSpan) {
+                return;
+            }
+            const now = new Date();
+            textSpan.textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            fitTextToContainer();
+        }
+
+        function startClock() {
+            updateClock();
+            if (!clockInterval) {
+                clockInterval = setInterval(updateClock, 60000);
+            }
+        }
+
+        function applyState(payload) {
+            if (!payload) {
+                return;
+            }
+            const layers = Object.assign({}, defaultLayers, payload.layers || {});
+            const content = payload.content || {};
+            const voices = Object.assign({ sopran: false, alt: false, tenor: false, bass: false }, content.voices || {});
+
+            voicesContainer.classList.toggle('hidden', !layers.voices);
+            Object.entries(voiceClassMap).forEach(([voice, className]) => {
+                const element = voiceElements[voice];
+                if (element) {
+                    element.classList.toggle(className, Boolean(voices[voice]));
+                }
+            });
+
+            if (textContainer && textSpan) {
+                if (layers.lyrics === false) {
+                    textContainer.classList.add('hidden');
+                    textSpan.textContent = '';
+                    stopClock();
+                } else {
+                    textContainer.classList.remove('hidden');
+                    const rawText = typeof content.text === 'string' ? content.text.trim() : '';
+                    if (rawText) {
+                        stopClock();
+                        textSpan.textContent = rawText;
+                        fitTextToContainer();
+                    } else {
+                        startClock();
+                    }
+                }
+            }
+
+            if (referenceEl) {
+                const hasReference = layers.bible_reference && content.bible_reference && content.bible_reference.reference;
+                if (hasReference) {
+                    const ref = content.bible_reference;
+                    const translation = ref.translation ? ` (${ref.translation})` : '';
+                    referenceEl.textContent = `${ref.reference}${translation}`;
+                    referenceEl.classList.remove('hidden');
+                } else {
+                    referenceEl.classList.add('hidden');
+                    referenceEl.textContent = '';
+                }
+            }
+
+            if (notesEl) {
+                const hasNotes = layers.notes && typeof content.notes === 'string' && content.notes.trim() !== '';
+                if (hasNotes) {
+                    notesEl.textContent = content.notes;
+                    notesEl.classList.remove('hidden');
+                } else {
+                    notesEl.classList.add('hidden');
+                    notesEl.textContent = '';
+                }
+            }
+
+            if (layers.lyrics !== false) {
+                fitTextToContainer();
+            }
+        }
+
+        async function pollState() {
+            try {
+                const response = await fetch(apiEndpoint, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                applyState(data);
+                pollingDelay = 4000;
+            } catch (error) {
+                pollingDelay = Math.min(Math.max(pollingDelay * 1.5, 4000), 60000);
+            } finally {
+                scheduleNext();
+            }
+        }
+
+        function scheduleNext(delay) {
+            if (pollTimeout) {
+                clearTimeout(pollTimeout);
+                pollTimeout = null;
+            }
+            if (document.hidden) {
+                return;
+            }
+            const nextDelay = typeof delay === 'number' ? delay : pollingDelay;
+            pollTimeout = setTimeout(pollState, nextDelay);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (pollTimeout) {
+                    clearTimeout(pollTimeout);
+                    pollTimeout = null;
+                }
+            } else {
+                scheduleNext(0);
+            }
+        });
+
+        const initialPayload = JSON.parse(document.getElementById('initial-display').textContent);
+        applyState(initialPayload);
+
+        window.addEventListener('load', () => {
+            fitTextToContainer();
+            scheduleNext();
+        });
+        window.addEventListener('resize', fitTextToContainer);
+    })();
+    </script>
+</body>
+</html>

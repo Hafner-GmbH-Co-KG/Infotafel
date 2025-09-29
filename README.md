@@ -1,94 +1,38 @@
 # Infotafel
 
-Dieses Repository enthält zwei einfache Projektansätze für eine Informations-
-tafel:
+Django-Projekt zur Steuerung einer digitalen Lied- und Hinweis-Anzeige. Der Fokus liegt wieder voll auf der Django-App im Ordner infotafel_project.
 
-1. **Django-Projekt** unter `infotafel_project` – ein minimales Django-Setup
-   zum Experimentieren mit Python.
-2. **HTML/PHP-Skelett** unter `infotafel/htdocs` – ein leichtgewichtiges
-   Grundgerüst, das sich später einfach erweitern lässt.
+## Schnellstart
 
-## Django-Projekt starten
+1. Virtuelle Umgebung anlegen: python -m venv .venv
+2. Aktivieren und Abhaengigkeiten installieren: pip install -r requirements.txt
+3. In das Django-Verzeichnis wechseln: cd infotafel_project
+4. Datenbank vorbereiten: python manage.py migrate
+5. Optional Admin-Benutzer: python manage.py createsuperuser
+6. Server starten: python manage.py runserver
 
-Am einfachsten lässt sich das Projekt mit dem beiliegenden Skript
-`start_infotafel.sh` starten. Es installiert die nötigen Pakete, lädt auf
-Wunsch die aktuelle Version des Repositories herunter oder aktualisiert eine
-bereits vorhandene Kopie, richtet eine virtuelle Umgebung ein und startet
-anschließend den Entwicklungsserver.
+Die Django-Instanz laeuft standardmaessig unter http://localhost:8000/.
 
-```bash
-./start_infotafel.sh
-```
+## Wichtige URLs
 
-Die im Skript verwendete Repository-Adresse kann bei Bedarf in der Variablen
-`REPO_URL` angepasst werden.
+- / - Anzeige fuer Besucher. Optional ?monitor=<slug> zum Umschalten.
+- /monitor/<slug>/ - Direkter Freigabelink fuer einen Monitor.
+- /monitore/ - Neue Verwaltungsoberflaeche fuer virtuelle Monitore (Login und is_staff notwendig).
+- /eingabe/ - Einfache Eingabeseite fuer kurzfristige Anzeigen (Login erforderlich).
 
-Alternativ können die Schritte manuell ausgeführt werden:
+## Monitore verwalten
 
-1. Abhängigkeiten installieren (z. B. in einer virtuellen Umgebung):
-   ```bash
-   pip install django
-   ```
-2. Datenbankmigrationen durchführen und Entwicklungsserver starten:
-   ```bash
-   cd infotafel_project
-   python manage.py migrate
-   python manage.py runserver
-   ```
-   Die Infotafel ist anschließend unter `http://127.0.0.1:8000/` erreichbar.
+Die Seite /monitore/ erlaubt das Anlegen, Loeschen und Teilen von virtuellen Monitoren direkt in Django. Beim Anlegen wird automatisch ein eindeutiger Kurzname erzeugt und ein Standard-Layer-Profil hinterlegt. Die angezeigten Freigabelinks verweisen auf die Django-Ansichten und koennen direkt im Browser oder auf Endgeraeten verwendet werden.
 
-## Struktur des HTML/PHP-Skeletts
+## Legacy-Daten importieren
 
-```
-infotafel/
-└── htdocs/
-    ├── index.html         ← Anzeige der Infotafel
-    ├── input.html         ← Eingabemaske
-    ├── scripts/
-    │   ├── archive.php    ← später zum Archivieren
-    │   └── speicher.php   ← später zum Speichern von Eingaben
-    └── data/
-        ├── anzeige.json       ← aktueller Text und Stati
-        ├── einstellungen.json ← Anzeigedauer
-        └── archiv.json        ← Historie
-```
+Alte JSON-Daten aus dem frueheren PHP-Setup liegen weiterhin unter Infotafel/htdocs/data. Mit dem Befehl
 
-Die Dateien enthalten vorerst nur Beispielinhalte und dienen als Grundlage
-für spätere Erweiterungen.
+    cd infotafel_project
+    python manage.py import_legacy_data
 
-## Liederanzeige-App
+lassen sich Monitore und Inhalte in die aktuelle Datenbank uebernehmen. Falls die Daten an einem anderen Ort liegen, kann der Pfad mit --base-dir <pfad> angegeben werden. Die Optionen --skip-monitors, --skip-content sowie --user <username> erlauben eine feinere Steuerung.
 
-Im Django-Unterverzeichnis `tafelausgabe` befindet sich eine kleine App, die
-die gewünschte Liederanzeige für Smartphones und Tablets nachbildet. Sie
-umfasst eine Anzeige- und eine Eingabeseite:
+## Hinweis zum PHP-Ordner
 
-* `http://127.0.0.1:8000/` – zeigt den aktuellen Liedtext in großen Lettern
-  auf schwarzem Hintergrund. Die Felder **T**, **S**, **A** und **B** werden je
-  nach Auswahl farbig hervorgehoben. Ist kein Text gespeichert, erscheint die
-  Uhrzeit.
-* `http://127.0.0.1:8000/eingabe/` – touch-freundliche Maske zum Eingeben des
-  Liedtextes, der aktivierten Stimmen sowie einer optionalen Anzeigedauer.
-  Der Zugriff erfordert eine Anmeldung. Die Seite zeigt eine Vorschau der
-  Anzeige und bleibt nach dem Speichern geöffnet.
-
-Die Anzeigeseite selbst enthält keinen direkten Link zur Eingabe. Die
-Eingabeseite muss daher über die URL aufgerufen werden.
-
-Die eingegebenen Daten werden in der von Django bereitgestellten SQLite-Datenbank
-gespeichert. Dadurch steht jedem angemeldeten Benutzer unter `/eingabe/` seine
-eigene Historie zur Verfügung. Die Anzeige aktualisiert sich nach dem Speichern
-automatisch.
-
-Um auf die Eingabeseite zugreifen zu können, muss ein Benutzerkonto
-vorhanden sein. Ein solches lässt sich mit
-
-```bash
-cd infotafel_project
-python manage.py createsuperuser
-```
-
-anlegen. Verwenden Sie einen beliebigen Benutzernamen – typisch ist
-`admin` – und wählen Sie ein Passwort. Danach erreichen Sie die
-Anmeldeseite automatisch unter `http://127.0.0.1:8000/accounts/login/`
-(oder beim ersten Besuch von `/eingabe/`). Nach erfolgreichem Login
-bleiben Sie angemeldet und können den Liedtext bearbeiten.
+Die Dateien im Verzeichnis Infotafel/htdocs dienen nur noch als Datenquelle fuer den Import. Die eigentliche Weboberflaeche und API werden komplett durch Django bereitgestellt.

@@ -79,6 +79,17 @@
 <body>
     <form id="eingabe" method="post">
         {% csrf_token %}
+        {% if monitors %}
+        <label>
+            Monitor
+            <select id="monitor" name="monitor">
+                <option value="" {% if not selected_monitor %}selected{% endif %}>Alle Monitore</option>
+                {% for monitor in monitors %}
+                <option value="{{ monitor.pk }}" {% if selected_monitor and monitor.pk == selected_monitor.pk %}selected{% endif %}>{{ monitor.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% endif %}
         <textarea id="text" name="text" placeholder="Liedtext">{{ text }}</textarea>
         <div class="voices">
             <label><input id="sopran" name="sopran" type="checkbox" {% if sopran %}checked{% endif %}> Sopran</label>
@@ -94,9 +105,12 @@
     <h2>Historie</h2>
     <ul>
         {% for e in history %}
-        <li>{{ e.created|date:"d.m.Y H:i" }}: {{ e.text|default:"(leer)" }}</li>
+        <li>
+            {{ e.created|date:"d.m.Y H:i" }}{% if e.monitor %} - {{ e.monitor.name }}{% else %} - Alle Monitore{% endif %}:
+            {{ e.text|default:"(leer)" }}
+        </li>
         {% empty %}
-        <li>Keine Einträge</li>
+        <li>Keine Eintraege</li>
         {% endfor %}
     </ul>
 
@@ -139,3 +153,4 @@
     </script>
 </body>
 </html>
+

@@ -249,6 +249,13 @@ class Eintrag(models.Model):
     alt = models.BooleanField(default=False)
     tenor = models.BooleanField(default=False)
     bass = models.BooleanField(default=False)
+    monitor = models.ForeignKey(
+        Monitor,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='legacy_entries',
+    )
     expire = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
 

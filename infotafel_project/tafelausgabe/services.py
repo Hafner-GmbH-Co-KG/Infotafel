@@ -156,13 +156,19 @@ def _build_content_from_state(
     }
 
 
-def _build_content_from_legacy() -> Dict[str, Any]:
+def _build_content_from_legacy(monitor: Optional[Monitor]) -> Dict[str, Any]:
     now = timezone.now()
-    entry = (
+    queryset = (
         Eintrag.objects.filter(Q(expire__isnull=True) | Q(expire__gt=now))
         .order_by("-created")
-        .first()
     )
+    entry = None
+    if monitor and getattr(monitor, "pk", None):
+        entry = queryset.filter(monitor=monitor).first()
+    if not entry:
+        entry = queryset.filter(monitor__isnull=True).first()
+    if not entry:
+        entry = queryset.first()
     if not entry:
         return {}
     return {
@@ -204,7 +210,7 @@ def resolve_display_for_monitor(identifier: Optional[str] = None) -> DisplayCont
     content = _build_content_from_state(display_state, monitor)
 
     if not content:
-        content = _build_content_from_legacy()
+        content = _build_content_from_legacy(monitor)
 
     if not content:
         content = {

@@ -21,6 +21,17 @@ from ...models import (
 
 User = get_user_model()
 
+def _default_data_dir() -> Path:
+    candidates = [
+        Path(__file__).resolve().parents[4] / "Infotafel" / "htdocs" / "data",
+        Path(__file__).resolve().parents[4] / "infotafel" / "htdocs" / "data",
+        Path(__file__).resolve().parents[3] / "infotafel" / "htdocs" / "data",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
 
 class Command(BaseCommand):
     """Importiert bestehende JSON-Daten aus dem PHP-System in das neue Modell."""
@@ -28,10 +39,11 @@ class Command(BaseCommand):
     help = "Importiert Monitore und Anzeigen aus infotafel/htdocs/data/*.json"
 
     def add_arguments(self, parser):
+        default_base_dir = _default_data_dir()
         parser.add_argument(
             "--base-dir",
-            default=str(Path(__file__).resolve().parents[3] / "infotafel" / "htdocs" / "data"),
-            help="Basisverzeichnis der JSON-Dateien (standard: infotafel/htdocs/data)",
+            default=str(default_base_dir),
+            help=f"Basisverzeichnis der JSON-Dateien (Standard: {default_base_dir})",
         )
         parser.add_argument(
             "--user",
@@ -50,9 +62,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        base_dir = Path(options["base_dir"]).resolve()
+        base_dir = Path(options["base_dir"]).expanduser().resolve()
         if not base_dir.exists():
-            raise CommandError(f"Basisverzeichnis {base_dir} wurde nicht gefunden.")
+            fallback = _default_data_dir()
+            if fallback.exists() and fallback != base_dir:
+                base_dir = fallback
+            else:
+                raise CommandError(
+                    f"Basisverzeichnis {base_dir} wurde nicht gefunden. Nutzen Sie --base-dir, um den Pfad vorzugeben."
+                )
 
         user = None
         username = options.get("user")
@@ -180,3 +198,4 @@ class Command(BaseCommand):
 
     def _ensure_display_state(self) -> None:
         DisplayState.objects.get_or_create(singleton_key="live")
+
