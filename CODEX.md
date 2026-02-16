@@ -69,3 +69,19 @@ Wenn etwas unklar ist:
 - erst Inventur (ripgrep/grep, Django settings, urls, models),
 - dann Plan,
 - dann Aenderung.
+
+## ⛏️ Option A – Immediate Baseline Cleanup (HARD RULE)
+
+Wenn „ruff check .“ oder „ruff format --check .“ im Repository Fehler meldet, muss eine **Baseline-Bereinigung** erfolgen, bevor ein Feature-Slice in main gemerged wird.
+
+### Regeln
+
+1) **Alle Ruff-Fehler müssen beseitigt werden**.
+   - Keine Ignorierung über `noqa`.
+   - Keine dauerhafte Deaktivierung im config.
+   - Auch Legacy-Code muss korrigiert werden.
+
+2) **Fix-Befehle sind verpflichtend:**
+   ```bash
+   python -m ruff check . --fix
+   python -m ruff format .
