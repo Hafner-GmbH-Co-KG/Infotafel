@@ -9,15 +9,20 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from .adapters.display.django_display_resolver import DjangoDisplayResolver
+from .application.display.dtos import ResolveDisplayInput
+from .application.display.use_cases import ResolveDisplay
 from .forms import MonitorCreateForm, MonitorDeleteForm
 from .models import Eintrag, Monitor
-from .services import resolve_display_for_monitor, serialize_display_context
+
+resolve_display_use_case = ResolveDisplay(resolver=DjangoDisplayResolver())
 
 
 def anzeige(request, identifier=None):
     monitor_identifier = identifier or request.GET.get("monitor")
-    display_context = resolve_display_for_monitor(monitor_identifier)
-    display_payload = serialize_display_context(display_context)
+    display_payload = resolve_display_use_case.execute(
+        ResolveDisplayInput(monitor_identifier=monitor_identifier)
+    ).payload
     return render(
         request,
         "tafelausgabe/anzeige.html",
@@ -32,8 +37,9 @@ def anzeige(request, identifier=None):
 @require_GET
 def monitor_state_api(request, identifier=None):
     monitor_identifier = identifier or request.GET.get("monitor")
-    display_context = resolve_display_for_monitor(monitor_identifier)
-    payload = serialize_display_context(display_context)
+    payload = resolve_display_use_case.execute(
+        ResolveDisplayInput(monitor_identifier=monitor_identifier)
+    ).payload
     return JsonResponse(payload)
 
 
@@ -47,7 +53,10 @@ def eingabe(request):
     selected_monitor = None
     if selected_monitor_id:
         for monitor in monitors:
-            if str(monitor.pk) == str(selected_monitor_id) or monitor.identifier == selected_monitor_id:
+            if (
+                str(monitor.pk) == str(selected_monitor_id)
+                or monitor.identifier == selected_monitor_id
+            ):
                 selected_monitor = monitor
                 selected_monitor_id = str(monitor.pk)
                 break
@@ -102,6 +111,8 @@ def eingabe(request):
         "selected_monitor_id": selected_monitor_id,
     }
     return render(request, "tafelausgabe/eingabe.html", context)
+
+
 @login_required
 def monitorverwaltung(request):
     if not request.user.is_staff:
@@ -121,14 +132,14 @@ def monitorverwaltung(request):
                 )
                 messages.success(
                     request,
-                    f"Monitor \"{monitor.name}\" angelegt. Freigabelink: {link}",
+                    f'Monitor "{monitor.name}" angelegt. Freigabelink: {link}',
                 )
                 return redirect("monitor-verwaltung")
         elif action == "delete":
             delete_form = MonitorDeleteForm(request.POST)
             if delete_form.is_valid():
                 monitor = delete_form.delete()
-                messages.success(request, f"Monitor \"{monitor.name}\" geloescht.")
+                messages.success(request, f'Monitor "{monitor.name}" geloescht.')
                 return redirect("monitor-verwaltung")
             else:
                 for error_list in delete_form.errors.values():
@@ -147,7 +158,3 @@ def monitorverwaltung(request):
         "monitors": monitors,
     }
     return render(request, "tafelausgabe/monitore.html", context)
-
-
-
-

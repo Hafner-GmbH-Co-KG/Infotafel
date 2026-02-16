@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from django import forms
 from django.db.models import Max
 from django.utils.text import slugify
@@ -25,7 +23,7 @@ class MonitorCreateForm(forms.Form):
     )
     is_active = forms.BooleanField(label="Aktiv", required=False, initial=True)
 
-    _resolved_identifier: Optional[str] = None
+    _resolved_identifier: str | None = None
 
     def clean_identifier(self) -> str:
         identifier = self.cleaned_data.get("identifier", "").strip()
@@ -75,7 +73,7 @@ class MonitorCreateForm(forms.Form):
 class MonitorDeleteForm(forms.Form):
     monitor_id = forms.IntegerField(widget=forms.HiddenInput)
 
-    _monitor: Optional[Monitor] = None
+    _monitor: Monitor | None = None
 
     def clean_monitor_id(self) -> int:
         monitor_id = self.cleaned_data["monitor_id"]

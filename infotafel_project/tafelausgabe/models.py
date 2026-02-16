@@ -1,14 +1,16 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
+
 class ContentItemType(models.TextChoices):
     SONG = "song", "Lied"
     BIBLE = "bible", "Bibel"
+
 
 class ContentItem(models.Model):
     """Zentrale Einheit fuer Inhalte, die auf allen Monitoren ausgespielt werden."""
@@ -57,6 +59,7 @@ class ContentItem(models.Model):
     def __str__(self) -> str:  # pragma: no cover - admin display
         return self.title
 
+
 class ContentSlide(models.Model):
     """Einzelne Folie innerhalb eines Inhalts."""
 
@@ -78,10 +81,15 @@ class ContentSlide(models.Model):
         label = self.label or f"Slide {self.position}"
         return f"{self.item.title} - {label}"
 
+
 class BibleReference(models.Model):
     """Verknuepft einen Inhalt des Typs Bibel mit einer konkreten Bibelstelle."""
 
-    item = models.OneToOneField(ContentItem, related_name="bible_reference", on_delete=models.CASCADE)
+    item = models.OneToOneField(
+        ContentItem,
+        related_name="bible_reference",
+        on_delete=models.CASCADE,
+    )
     book = models.CharField(max_length=60)
     chapter = models.PositiveIntegerField()
     verse_start = models.PositiveIntegerField()
@@ -98,6 +106,7 @@ class BibleReference(models.Model):
         if self.verse_end != self.verse_start:
             reference = f"{reference}-{self.verse_end}"
         return f"{reference} ({self.translation})"
+
 
 class Setlist(models.Model):
     """Repraesentiert einen Ablaufplan oder Gottesdienst."""
@@ -126,12 +135,17 @@ class Setlist(models.Model):
             return f"{self.name} ({self.event_date:%d.%m.%Y})"
         return self.name
 
+
 class SetlistItem(models.Model):
     """Verknuepft Inhalte mit einer Setliste und definiert die Reihenfolge."""
 
     setlist = models.ForeignKey(Setlist, related_name="items", on_delete=models.CASCADE)
     position = models.PositiveIntegerField()
-    content_item = models.ForeignKey(ContentItem, related_name="setlist_items", on_delete=models.CASCADE)
+    content_item = models.ForeignKey(
+        ContentItem,
+        related_name="setlist_items",
+        on_delete=models.CASCADE,
+    )
     notes = models.CharField(max_length=255, blank=True)
     is_optional = models.BooleanField(default=False)
 
@@ -144,13 +158,15 @@ class SetlistItem(models.Model):
     def __str__(self) -> str:  # pragma: no cover - admin display
         return f"{self.setlist.name}: {self.content_item.title}"
 
+
 class MonitorRole(models.TextChoices):
     FRONT = "front", "Publikum"
     STAGE = "stage", "Buehne"
     STREAM = "stream", "Livestream"
     CONTROL = "control", "Regie"
 
-def default_layer_config() -> Dict[str, Any]:
+
+def default_layer_config() -> dict[str, Any]:
     return {
         "lyrics": True,
         "voices": True,
@@ -158,6 +174,7 @@ def default_layer_config() -> Dict[str, Any]:
         "notes": False,
         "next_slide": False,
     }
+
 
 class Monitor(models.Model):
     """Virtueller Monitor mit eigener Layer-Konfiguration."""
@@ -179,6 +196,7 @@ class Monitor(models.Model):
     def __str__(self) -> str:  # pragma: no cover - admin display
         return self.name
 
+
 class MonitorLayerConfig(models.Model):
     """Standard-Layer pro Monitor."""
 
@@ -192,11 +210,16 @@ class MonitorLayerConfig(models.Model):
     def __str__(self) -> str:  # pragma: no cover - admin display
         return f"Layer fuer {self.monitor.name}"
 
+
 class MonitorContentOverride(models.Model):
     """Ueberschreibt Layer fuer einen spezifischen Inhalt und Monitor."""
 
     monitor = models.ForeignKey(Monitor, related_name="content_overrides", on_delete=models.CASCADE)
-    content_item = models.ForeignKey(ContentItem, related_name="monitor_overrides", on_delete=models.CASCADE)
+    content_item = models.ForeignKey(
+        ContentItem,
+        related_name="monitor_overrides",
+        on_delete=models.CASCADE,
+    )
     layers = models.JSONField(default=dict, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -207,6 +230,7 @@ class MonitorContentOverride(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - admin display
         return f"Override {self.monitor.name} / {self.content_item.title}"
+
 
 class DisplayState(models.Model):
     """Aktueller globaler Live-Zustand."""
@@ -238,6 +262,7 @@ class DisplayState(models.Model):
             return f"Live: {self.current_item.title}"
         return "Live: (kein Inhalt)"
 
+
 class Eintrag(models.Model):
     """Bestehender Legacy-Eintrag fuer die aktuelle Anzeige."""
 
@@ -254,7 +279,7 @@ class Eintrag(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='legacy_entries',
+        related_name="legacy_entries",
     )
     expire = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)

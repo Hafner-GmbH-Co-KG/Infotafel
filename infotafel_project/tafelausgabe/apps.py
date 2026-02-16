@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class TafelausgabeConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'tafelausgabe'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "tafelausgabe"
