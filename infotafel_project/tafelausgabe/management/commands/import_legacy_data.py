@@ -1,13 +1,13 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.utils import timezone
 
 from ...models import (
     ContentItem,
@@ -20,6 +20,7 @@ from ...models import (
 )
 
 User = get_user_model()
+
 
 def _default_data_dir() -> Path:
     candidates = [
@@ -69,7 +70,9 @@ class Command(BaseCommand):
                 base_dir = fallback
             else:
                 raise CommandError(
-                    f"Basisverzeichnis {base_dir} wurde nicht gefunden. Nutzen Sie --base-dir, um den Pfad vorzugeben."
+                    "Basisverzeichnis "
+                    f"{base_dir} wurde nicht gefunden. Nutzen Sie --base-dir, "
+                    "um den Pfad vorzugeben."
                 )
 
         user = None
@@ -77,8 +80,8 @@ class Command(BaseCommand):
         if username:
             try:
                 user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                raise CommandError(f"Benutzer {username} wurde nicht gefunden.")
+            except User.DoesNotExist as err:
+                raise CommandError(f"Benutzer {username} wurde nicht gefunden.") from err
 
         monitors_data = self._load_json(base_dir / "monitors.json", default=[])
         settings_data = self._load_json(base_dir / "einstellungen.json", default={})
@@ -99,10 +102,11 @@ class Command(BaseCommand):
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            raise CommandError(f"Datei {path} konnte nicht gelesen werden: {exc}")
+            raise CommandError(f"Datei {path} konnte nicht gelesen werden: {exc}") from exc
 
-    def _import_monitors(self, monitors: Iterable[Dict[str, Any]], settings: Dict[str, Any]) -> None:
-        existing_ids = set(Monitor.objects.values_list("identifier", flat=True))
+    def _import_monitors(
+        self, monitors: Iterable[dict[str, Any]], settings: dict[str, Any]
+    ) -> None:
         for entry in monitors:
             identifier = str(entry.get("id") or entry.get("identifier") or "").strip()
             if not identifier:
@@ -124,7 +128,9 @@ class Command(BaseCommand):
             duration_entry = settings.get(identifier)
             if isinstance(duration_entry, dict):
                 duration = duration_entry.get("anzeigedauer")
-            layer_defaults = monitor.layer_config.layers if getattr(monitor, "layer_config", None) else None
+            layer_defaults = (
+                monitor.layer_config.layers if getattr(monitor, "layer_config", None) else None
+            )
             if not layer_defaults:
                 MonitorLayerConfig.objects.get_or_create(
                     monitor=monitor,
@@ -147,7 +153,7 @@ class Command(BaseCommand):
         if not monitors:
             self.stdout.write("Keine Monitore in monitors.json gefunden.")
 
-    def _import_content(self, display_data: Dict[str, Any], user: Optional[User]) -> None:
+    def _import_content(self, display_data: dict[str, Any], user: User | None) -> None:
         # Importiert jeden Monitor-Eintrag als ContentItem + Slide
         for monitor_id, payload in display_data.items():
             if not isinstance(payload, dict):
@@ -198,4 +204,3 @@ class Command(BaseCommand):
 
     def _ensure_display_state(self) -> None:
         DisplayState.objects.get_or_create(singleton_key="live")
-
